@@ -1,0 +1,9 @@
+{
+  "name": "TOKO KITA - Kasir dan Stok",
+  "short_name": "TOKO KITA",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f6f3",
+  "theme_color": "#14532d",
+  "description": "Kasir dan manajemen stok toko sederhana"
+}

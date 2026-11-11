@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<meta name="description" content="Kasir dan manajemen stok toko sederhana">
+<link rel="manifest" href="manifest.json">
+<title>TOKO KITA</title>
+<style>
+:root{--green:#14532d;--green2:#166534;--bg:#f3f6f3;--card:#fff;--ink:#17221a;--muted:#66736a;--line:#e2e9e3;--red:#b91c1c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--green);color:white;padding:18px 16px 15px;position:sticky;top:0;z-index:5}
+header .sub{font-size:12px;opacity:.8;margin-top:3px}.wrap{max-width:760px;margin:auto;padding:14px 12px 90px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;background:white;padding:10px 2px;color:var(--muted);font-size:11px}nav button.active{color:var(--green);font-weight:700}
+nav span{display:block;font-size:20px;margin-bottom:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;margin:10px 0;box-shadow:0 2px 8px #142b1810}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f7faf7;border-radius:12px;padding:12px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:20px;margin-top:5px}
+h2{font-size:19px;margin:8px 0 12px}h3{font-size:15px;margin:0 0 10px}
+button,.btn{border:0;border-radius:10px;background:var(--green2);color:#fff;padding:11px 13px;font-weight:650;font-size:14px;cursor:pointer}
+button.secondary{background:#e8f1e9;color:var(--green)}button.danger{background:#fee2e2;color:#991b1b}button:disabled{opacity:.5}
+input,select{width:100%;padding:11px;border:1px solid #ccd7ce;border-radius:9px;font:inherit;background:white;color:var(--ink);margin:5px 0 10px}
+label{font-size:12px;color:var(--muted);font-weight:650;display:block;margin-top:7px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row .fit{flex:0 0 auto}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}
+.item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
+.muted{color:var(--muted);font-size:12px}.price{font-weight:750}.pill{font-size:11px;background:#e8f1e9;color:var(--green);padding:4px 8px;border-radius:99px}
+.hidden{display:none!important}.empty{text-align:center;color:var(--muted);padding:25px 8px}
+#video{width:100%;border-radius:12px;background:#111;max-height:260px;object-fit:cover}
+.notice{padding:10px;border-radius:10px;background:#fff7d6;color:#704d00;font-size:12px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:9px 5px;border-bottom:1px solid var(--line)}th{color:var(--muted)}
+.total{font-size:22px;font-weight:800;color:var(--green)}
+@media(min-width:600px){.wrap{padding-top:22px}.grid.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><div style="font-weight:850;font-size:21px">TOKO KITA</div><div class="sub">Kasir • Stok barang • Laporan</div></header>
+<main class="wrap">
+<section id="home" class="page">
+<h2>Ringkasan toko</h2>
+<div class="grid stats">
+<div class="stat"><small>Total produk</small><strong id="statProducts">0</strong></div>
+<div class="stat"><small>Stok menipis</small><strong id="statLow">0</strong></div>
+<div class="stat"><small>Omzet hari ini</small><strong id="statSales">Rp0</strong></div>
+<div class="stat"><small>Laba kotor hari ini</small><strong id="statProfit">Rp0</strong></div>
+</div>
+<div class="card"><h3>Akses cepat</h3><div class="actions"><button onclick="go('cashier')">＋ Kasir baru</button><button class="secondary" onclick="go('products')">＋ Tambah barang</button></div></div>
+<div class="card"><h3>Stok perlu diperhatikan</h3><div id="lowList" class="muted">Belum ada data barang.</div></div>
+<div class="card"><h3>Transaksi terbaru</h3><div id="recentList" class="muted">Belum ada transaksi.</div></div>
+</section>
+
+<section id="products" class="page hidden">
+<h2>Data barang</h2>
+<div class="card">
+<h3 id="productFormTitle">Tambah barang</h3>
+<input type="hidden" id="pId">
+<label>Nama barang</label><input id="pName" placeholder="Contoh: Mi instan goreng">
+<label>Barcode / kode barang</label><div class="row"><input id="pCode" placeholder="Scan atau isi kode"><button class="fit secondary" onclick="openScanner('pCode')">Scan</button></div>
+<label>Kategori</label><input id="pCategory" placeholder="Contoh: Makanan, minuman">
+<div class="row"><div><label>Harga modal (Rp)</label><input id="pCost" type="number" min="0" placeholder="0"></div><div><label>Harga jual (Rp)</label><input id="pPrice" type="number" min="0" placeholder="0"></div></div>
+<div class="row"><div><label>Stok awal</label><input id="pStock" type="number" min="0" placeholder="0"></div><div><label>Satuan</label><input id="pUnit" placeholder="pcs / botol / kg"></div></div>
+<button onclick="saveProduct()">Simpan barang</button> <button class="secondary" onclick="clearProductForm()">Bersihkan</button>
+</div>
+<input id="productSearch" placeholder="Cari nama atau barcode..." oninput="renderProducts()">
+<div class="card"><div id="productList" class="muted">Belum ada produk.</div></div>
+</section>
+
+<section id="stock" class="page hidden">
+<h2>Barang masuk / keluar</h2>
+<div class="card">
+<label>Pilih barang</label><select id="stockProduct"></select>
+<div class="row"><div><label>Jenis pergerakan</label><select id="stockType"><option value="in">Barang masuk</option><option value="out">Barang keluar</option></select></div><div><label>Jumlah</label><input id="stockQty" type="number" min="1" value="1"></div></div>
+<label>Catatan (opsional)</label><input id="stockNote" placeholder="Contoh: belanja dari grosir / rusak">
+<button onclick="saveStockMovement()">Simpan pergerakan stok</button>
+</div>
+<div class="card"><h3>Riwayat stok</h3><div id="stockHistory" class="muted">Belum ada riwayat.</div></div>
+</section>
+
+<section id="cashier" class="page hidden">
+<h2>Kasir</h2>
+<div class="card">
+<div class="row"><input id="scanCode" placeholder="Scan / masukkan barcode"><button class="fit" onclick="openScanner('scanCode')">📷 Scan</button></div>
+<button class="secondary" style="width:100%" onclick="addByCode()">Tambah dengan kode</button>
+<label>Atau pilih barang</label><div class="row"><select id="cashProduct"></select><button class="fit" onclick="addSelected()">Tambah</button></div>
+</div>
+<div class="card"><h3>Keranjang belanja</h3><div id="cartList" class="muted empty">Belum ada barang di keranjang.</div><div class="item"><strong>Total</strong><span class="total" id="cartTotal">Rp0</span></div>
+<label>Uang diterima (Rp)</label><input id="cashReceived" type="number" min="0" placeholder="Masukkan pembayaran" oninput="updateChange()">
+<div class="item"><span>Kembalian</span><strong id="cashChange">Rp0</strong></div>
+<button style="width:100%" onclick="checkout()">Selesaikan transaksi</button>
+</div>
+<div class="notice">Stok baru berkurang setelah transaksi berhasil diselesaikan. Pastikan pembayaran sudah benar.</div>
+</section>
+
+<section id="reports" class="page hidden">
+<h2>Laporan</h2>
+<div class="grid">
+<div class="stat"><small>Omzet keseluruhan</small><strong id="allSales">Rp0</strong></div>
+<div class="stat"><small>Laba kotor keseluruhan</small><strong id="allProfit">Rp0</strong></div>
+</div>
+<div class="card"><h3>Riwayat transaksi</h3><div id="salesHistory" class="muted">Belum ada transaksi.</div></div>
+<div class="card"><h3>Cadangkan / pulihkan data</h3><p class="muted">Simpan backup secara berkala. File backup berisi produk, stok, dan riwayat transaksi.</p>
+<div class="actions"><button onclick="exportBackup()">Unduh backup</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">Pulihkan backup</button><input id="restoreFile" type="file" accept="application/json" class="hidden" onchange="restoreBackup(event)"></div>
+</div>
+</section>
+</main>
+
+<nav>
+<button class="active" data-page="home" onclick="go('home')"><span>⌂</span>Beranda</button>
+<button data-page="products" onclick="go('products')"><span>▣</span>Barang</button>
+<button data-page="stock" onclick="go('stock')"><span>⇅</span>Stok</button>
+<button data-page="cashier" onclick="go('cashier')"><span>▤</span>Kasir</button>
+<button data-page="reports" onclick="go('reports')"><span>▥</span>Laporan</button>
+</nav>
+
+<div id="scannerModal" class="hidden" style="position:fixed;inset:0;background:#000b;z-index:30;padding:18px;overflow:auto">
+<div class="card" style="max-width:500px;margin:20px auto">
+<div class="row"><h3>Scan barcode</h3><button class="fit danger" onclick="closeScanner()">Tutup</button></div>
+<video id="video" autoplay playsinline></video><p id="scanStatus" class="muted">Arahkan barcode ke kamera belakang HP.</p>
+<button class="secondary" style="width:100%" onclick="switchCamera()">Ganti kamera</button>
+</div></div>
+<div id="receiptModal" class="hidden" style="position:fixed;inset:0;background:#0009;z-index:40;padding:12px;overflow:auto">
+<div class="card" style="max-width:430px;margin:20px auto;background:white">
+<div id="receiptContent"></div><div class="actions"><button onclick="shareReceipt()">Bagikan</button><button class="secondary" onclick="window.print()">Cetak / PDF</button><button class="danger" onclick="closeReceipt()">Tutup</button></div>
+</div></div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const DB_NAME='tokoKitaDB', DB_VERSION=1; let db, cart=[], scanner=null, scanTarget='scanCode', facing='environment', lastReceipt='';
+const rupiah=n=>'Rp'+Number(n||0).toLocaleString('id-ID');
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=()=>{let d=req.result;['products','sales','movements'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id',autoIncrement:true})})};req.onsuccess=()=>{db=req.result;resolve()};req.onerror=()=>reject(req.error)})}
+function store(name,mode='readonly'){return db.transaction(name,mode).objectStore(name)}
+function all(name){return new Promise((res,rej)=>{let r=store(name).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function put(name,obj){return new Promise((res,rej)=>{let r=store(name,'readwrite').put(obj);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function add(name,obj){return new Promise((res,rej)=>{let r=store(name,'readwrite').add(obj);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function del(name,id){return new Promise((res,rej)=>{let r=store(name,'readwrite').delete(Number(id));r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function go(page){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));document.getElementById(page).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===page));refresh()}
+function clearProductForm(){['pId','pName','pCode','pCategory','pCost','pPrice','pStock','pUnit'].forEach(id=>document.getElementById(id).value='');document.getElementById('productFormTitle').textContent='Tambah barang'}
+async function saveProduct(){let id=document.getElementById('pId').value,name=pName.value.trim(),code=pCode.value.trim();if(!name){alert('Nama barang wajib diisi');return}let products=await all('products');if(code&&products.some(p=>p.code===code&&String(p.id)!==id)){alert('Kode/barcode sudah digunakan barang lain');return}
+let p={name,code,category:pCategory.value.trim(),cost:Number(pCost.value||0),price:Number(pPrice.value||0),stock:Number(pStock.value||0),unit:pUnit.value.trim()||'pcs'};if(id){let old=products.find(x=>x.id===Number(id));p.id=Number(id);p.stock=Number(pStock.value||0);await put('products',p)}else await add('products',p);clearProductForm();await refresh();alert('Barang berhasil disimpan')}
+async function editProduct(id){let p=(await all('products')).find(x=>x.id===id);if(!p)return;pId.value=p.id;pName.value=p.name;pCode.value=p.code;pCategory.value=p.category;pCost.value=p.cost;pPrice.value=p.price;pStock.value=p.stock;pUnit.value=p.unit;productFormTitle.textContent='Edit barang';window.scrollTo(0,0)}
+async function removeProduct(id){if(confirm('Hapus barang ini? Riwayat transaksi lama tetap tersimpan.')){await del('products',id);refresh()}}
+async function renderProducts(){let ps=await all('products'),q=productSearch.value.toLowerCase();ps=ps.filter(p=>(p.name+' '+p.code+' '+p.category).toLowerCase().includes(q));productList.innerHTML=ps.length?ps.map(p=>`<div class="item"><div><b>${esc(p.name)}</b><div class="muted">${esc(p.code||'Tanpa barcode')} • ${esc(p.category||'Umum')}</div><div class="muted">Modal ${rupiah(p.cost)} • Jual ${rupiah(p.price)}</div><span class="pill">Stok ${p.stock} ${esc(p.unit)}</span></div><div style="text-align:right"><button class="secondary" onclick="editProduct(${p.id})">Edit</button><button class="danger" onclick="removeProduct(${p.id})">Hapus</button></div></div>`).join(''):'<div class="empty">Produk tidak ditemukan.</div>'}
+async function refreshSelects(){let ps=await all('products');let opts=ps.map(p=>`<option value="${p.id}">${esc(p.name)} — ${p.stock} ${esc(p.unit)}</option>`).join('');stockProduct.innerHTML=opts||'<option value="">Belum ada produk</option>';cashProduct.innerHTML=opts||'<option value="">Belum ada produk</option>'}
+async function saveStockMovement(){let id=Number(stockProduct.value),qty=Number(stockQty.value),type=stockType.value;if(!id||qty<1){alert('Pilih barang dan jumlah minimal 1');return}let p=(await all('products')).find(x=>x.id===id);if(type==='out'&&qty>p.stock){alert('Stok tidak mencukupi');return}p.stock+=type==='in'?qty:-qty;await put('products',p);await add('movements',{productId:id,name:p.name,type,qty,note:stockNote.value,date:new Date().toISOString()});stockQty.value=1;stockNote.value='';refresh()}
+async function renderStockHistory(){let ms=(await all('movements')).sort((a,b)=>b.id-a.id).slice(0,30);stockHistory.innerHTML=ms.length?ms.map(m=>`<div class="item"><div><b>${esc(m.name)}</b><div class="muted">${new Date(m.date).toLocaleString('id-ID')} • ${esc(m.note||'-')}</div></div><span class="pill">${m.type==='in'?'+':'−'}${m.qty}</span></div>`).join(''):'Belum ada riwayat.'}
+async function addByCode(){let c=scanCode.value.trim();if(!c)return;let p=(await all('products')).find(x=>x.code===c);if(!p){alert('Barcode tidak ditemukan. Tambahkan barang terlebih dahulu.');return}addToCart(p);scanCode.value=''}
+async function addSelected(){let p=(await all('products')).find(x=>x.id===Number(cashProduct.value));if(p)addToCart(p)}
+function addToCart(p){if(p.stock<1){alert('Stok barang habis');return}let line=cart.find(x=>x.id===p.id);if(line){if(line.qty>=p.stock){alert('Jumlah melebihi stok');return}line.qty++}else cart.push({id:p.id,name:p.name,price:p.price,cost:p.cost,unit:p.unit,qty:1});renderCart()}
+function changeQty(id,d){let l=cart.find(x=>x.id===id);if(!l)return;let pCache=l;if(l.qty+d<=0)cart=cart.filter(x=>x.id!==id);else l.qty+=d;renderCart()}
+function totalCart(){return cart.reduce((s,x)=>s+x.price*x.qty,0)}
+function renderCart(){cartList.classList.toggle('empty',!cart.length);cartList.innerHTML=cart.length?cart.map(x=>`<div class="item"><div><b>${esc(x.name)}</b><div class="muted">${rupiah(x.price)} × ${x.qty} ${esc(x.unit)}</div></div><div class="row" style="max-width:130px"><button class="secondary" onclick="changeQty(${x.id},-1)">−</button><b>${x.qty}</b><button class="secondary" onclick="changeQty(${x.id},1)">+</button></div></div>`).join(''):'Belum ada barang di keranjang.';cartTotal.textContent=rupiah(totalCart());updateChange()}
+function updateChange(){let change=Number(cashReceived.value||0)-totalCart();cashChange.textContent=rupiah(Math.max(0,change));cashChange.style.color=change<0?'var(--red)':'var(--green)'}
+async function checkout(){if(!cart.length){alert('Keranjang masih kosong');return}let total=totalCart(),received=Number(cashReceived.value||0);if(received<total){alert('Uang diterima belum mencukupi');return}let ps=await all('products');for(let line of cart){let p=ps.find(x=>x.id===line.id);if(!p||p.stock<line.qty){alert('Stok '+line.name+' tidak mencukupi. Periksa kembali.');return}}
+let sale={date:new Date().toISOString(),items:cart.map(x=>({...x})),total,received,change:received-total,profit:cart.reduce((s,x)=>s+(x.price-x.cost)*x.qty,0)};let tx=db.transaction(['products','sales'],'readwrite');for(let line of cart){let p=ps.find(x=>x.id===line.id);p.stock-=line.qty;tx.objectStore('products').put(p)}tx.objectStore('sales').add(sale);tx.oncomplete=()=>{cart=[];cashReceived.value='';renderCart();showReceipt(sale);refresh()};tx.onerror=()=>alert('Transaksi gagal disimpan')}
+function showReceipt(s){lastReceipt=`TOKO KITA\n${new Date(s.date).toLocaleString('id-ID')}\n--------------------\n${s.items.map(x=>`${x.name} x${x.qty} = ${rupiah(x.price*x.qty)}`).join('\n')}\n--------------------\nTOTAL ${rupiah(s.total)}\nTUNAI ${rupiah(s.received)}\nKEMBALI ${rupiah(s.change)}\nTerima kasih`;receiptContent.innerHTML=`<div style="text-align:center"><h2>TOKO KITA</h2><small>${new Date(s.date).toLocaleString('id-ID')}</small></div><hr>${s.items.map(x=>`<div class="item"><span>${esc(x.name)} × ${x.qty}</span><b>${rupiah(x.price*x.qty)}</b></div>`).join('')}<hr><div class="item"><b>TOTAL</b><b>${rupiah(s.total)}</b></div><div class="item"><span>Tunai</span><span>${rupiah(s.received)}</span></div><div class="item"><span>Kembalian</span><b>${rupiah(s.change)}</b></div><p style="text-align:center">Terima kasih sudah berbelanja</p>`;receiptModal.classList.remove('hidden')}
+function closeReceipt(){receiptModal.classList.add('hidden')}async function shareReceipt(){if(navigator.share){try{await navigator.share({title:'Bukti pembayaran TOKO KITA',text:lastReceipt})}catch(e){}}else{await navigator.clipboard.writeText(lastReceipt);alert('Struk disalin. Silakan tempel ke WhatsApp.')}}
+async function renderReports(){let ss=(await all('sales')).sort((a,b)=>b.id-a.id),today=new Date().toLocaleDateString('id-ID');let daily=ss.filter(s=>new Date(s.date).toLocaleDateString('id-ID')===today);statSales.textContent=rupiah(daily.reduce((a,s)=>a+s.total,0));statProfit.textContent=rupiah(daily.reduce((a,s)=>a+s.profit,0));allSales.textContent=rupiah(ss.reduce((a,s)=>a+s.total,0));allProfit.textContent=rupiah(ss.reduce((a,s)=>a+s.profit,0));salesHistory.innerHTML=ss.length?ss.map(s=>`<div class="item"><div><b>${rupiah(s.total)}</b><div class="muted">${new Date(s.date).toLocaleString('id-ID')} • ${s.items.length} jenis barang</div></div><button class="secondary" onclick="showReceiptById(${s.id})">Struk</button></div>`).join(''):'Belum ada transaksi.'}
+async function showReceiptById(id){let s=(await all('sales')).find(x=>x.id===id);if(s)showReceipt(s)}
+async function renderHome(){let ps=await all('products'),ss=await all('sales'),today=new Date().toLocaleDateString('id-ID');statProducts.textContent=ps.length;statLow.textContent=ps.filter(p=>p.stock<=5).length;let ds=ss.filter(s=>new Date(s.date).toLocaleDateString('id-ID')===today);statSales.textContent=rupiah(ds.reduce((a,s)=>a+s.total,0));statProfit.textContent=rupiah(ds.reduce((a,s)=>a+s.profit,0));let low=ps.filter(p=>p.stock<=5);lowList.innerHTML=low.length?low.map(p=>`<div class="item"><span>${esc(p.name)}</span><b>${p.stock} ${esc(p.unit)}</b></div>`).join(''):'Tidak ada stok menipis.';recentList.innerHTML=ss.length?ss.sort((a,b)=>b.id-a.id).slice(0,5).map(s=>`<div class="item"><span>${new Date(s.date).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span><b>${rupiah(s.total)}</b></div>`).join(''):'Belum ada transaksi.'}
+async function refresh(){if(!db)return;await renderProducts();await refreshSelects();await renderStockHistory();await renderReports();await renderHome()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function openScanner(target){scanTarget=target;scannerModal.classList.remove('hidden');scanStatus.textContent='Meminta izin kamera...';try{if(!window.Html5Qrcode){scanStatus.textContent='Pemindai belum termuat. Periksa koneksi internet saat pertama kali membuka aplikasi.';return}scanner=new Html5Qrcode('video');await scanner.start({facingMode:facing},{fps:10,qrbox:{width:240,height:140}},code=>{document.getElementById(scanTarget).value=code;closeScanner();if(scanTarget==='scanCode')addByCode()},()=>{});scanStatus.textContent='Arahkan barcode ke kamera.'}catch(e){scanStatus.textContent='Kamera tidak dapat dibuka. Izinkan akses kamera pada Chrome dan gunakan alamat HTTPS.'}}
+async function switchCamera(){facing=facing==='environment'?'user':'environment';if(scanner){try{await scanner.stop();await scanner.clear()}catch(e){}scanner=null}openScanner(scanTarget)}
+async function closeScanner(){if(scanner){try{await scanner.stop();await scanner.clear()}catch(e){}scanner=null}scannerModal.classList.add('hidden')}
+async function exportBackup(){let data={version:1,createdAt:new Date().toISOString(),products:await all('products'),sales:await all('sales'),movements:await all('movements')};let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='backup-toko-kita-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)}
+async function restoreBackup(e){let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!d.products||!d.sales||!d.movements)throw Error();if(!confirm('Pulihkan backup? Data saat ini akan diganti.'))return;let tx=db.transaction(['products','sales','movements'],'readwrite');for(let n of ['products','sales','movements']){let os=tx.objectStore(n);os.clear();(d[n]||[]).forEach(x=>os.put(x))}tx.oncomplete=()=>{alert('Backup berhasil dipulihkan');refresh()}}catch(err){alert('File backup tidak valid')}e.target.value=''}
+(async()=>{try{await openDB();await refresh();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{})}catch(e){alert('Database tidak dapat dibuka pada browser ini.')}})();
+</script>
+</body></html>
